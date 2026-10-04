@@ -1,0 +1,43 @@
+#!/bin/bash
+
+dir="$1"
+mal_dir="$2"
+
+while true; do
+	if [ -z "$(ls -A "$mal_dir")" ]; then
+    		echo "No malicious files to review"
+		sleep 3
+		continue
+	fi
+
+	files=("$mal_dir"/*)
+
+	for i in "${!files[@]}"; do
+    		echo "$((i + 1)). $(basename "${files[$i]}")"
+	done
+
+	read -p "Choose a file: " choice
+
+	selected_file="${files[$((choice - 1))]}"
+
+	filename=$(basename "$selected_file")
+
+	echo "You selected: $filename"
+
+	echo "Choose operation:"
+	echo "1. Restore $filename to $dir"
+	echo "2. Permenantly delete $filename"
+	echo "3. Leave it and return"
+	
+	read choice
+	if [ $choice -eq 1 ]; then
+		cp "$selected_file" "$dir/$filename"
+		rm "$selected_file"
+		echo "Restored $filename to $dir"
+	elif [ $choice -eq 2 ]; then
+		rm "$selected_file"
+		echo "$filename permanantly deleted"
+	else
+		continue
+	fi
+done

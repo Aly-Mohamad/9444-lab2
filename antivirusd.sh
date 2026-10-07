@@ -21,6 +21,12 @@ while true; do
 				continue
 			fi
 
+			whitelist_name=$(basename "$file")
+			if [ -f ".whitelist" ] && grep -Fxq "$whitelist_name" ".whitelist"; then
+				echo "$file is whitelisted, skipping"
+				continue
+			fi
+
 			malicious=false
 
             		case "$file" in

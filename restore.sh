@@ -34,6 +34,13 @@ while true; do
 		cp "$selected_file" "$dir/$filename"
 		rm "$selected_file"
 		echo "Restored $filename to $dir"
+
+		touch ".whitelist"
+		if ! grep -Fxq "$filename" ".whitelist"; then
+			echo "$filename" >> ".whitelist"
+		fi
+		echo "$filename added to whitelist"
+
 	elif [ $choice -eq 2 ]; then
 		rm "$selected_file"
 		echo "$filename permanantly deleted"

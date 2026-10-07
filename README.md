@@ -3,7 +3,14 @@
 
 This is a shell script checks for directory changes and when a change is detected it scans the directory for files it considers malicious. Malicious files become flagged and printed to the terminal then quarantined to a separate directory. There is also a restore tool that lets the user pick quarantined files from a list and decide whether each file was falsely flagged or genuinly malicious.
 
+## Table of Contents
 
+- [Overview](#folder-hierarchy-and-overview)
+- [Prerequisites](#prerequisites)
+- [Usage — Step-by-Step](#step-by-step-instructions)
+- [Where Flagged-Extensions and Flagged-Keywords Are Defined](#where-flagged-extensions-and-flagged-keywords-are-defined)
+- [Cron Job](#cron-job)
+- [Whitelist](#whitelist)
 
 ## Folder Hierarchy and Overview
 
@@ -17,10 +24,37 @@ Os/
 │   └── geek.exe        # Example file under monitoring
 ├── malicious_dir/      # Quarantine directory for flagged files
 │   └── Hangman.exe     # Example quarantined file
+├── .whitelist          # Basenames of restored (false-positive) files, one per line
 ├── directory-info.last # Generated at runtime: last `ls -l dir` snapshot
 └── directory-info.new  # Generated at runtime: current `ls -l dir` snapshot
 ```
 ## Prerequisites
+
+
+- **OS:** Ubuntu (20.04 / 22.04 / 24.04) or any Debian-based Linux. Also works on WSL.
+- **Tools used by the scripts (all standard on Ubuntu):**
+  - `bash` — interpreter (`#!/bin/bash`)
+  - `coreutils` — `ls`, `cp`, `rm`, `sleep`, `basename`, `mkdir`
+  - `diffutils` — `cmp` (for snapshot comparison)
+  - `grep` — for keyword scan (`grep -qiE`)
+  - `make` — only needed for `make antivirus` / `make restore` shortcuts
+
+### How to Install Them on Ubuntu
+
+```bash
+sudo apt update
+sudo apt install -y bash coreutils diffutils grep make
+
+# Verify:
+bash --version
+ls --version
+cmp --version
+grep --version
+make --version
+```
+
+No extra packages and no root required to run the tools.
+
 ## Step-by-step Instructions
 
 ### 1. Run the Antivirus daemon
@@ -153,4 +187,54 @@ month) through:
 - `&& ...` = run the scan + log only when the guard passes.
 - Why 15–21? The 1st Friday falls on days 1–7, 2nd on 8–14, **3rd on 15–21**,
   4th on 22–28 (5th, if it exists, on 29–31).
+
+## Whitelist
+
+Restoring a file with `restore.sh` used to be pointless: the file still matched
+its flagged extension/keyword, so the next scan re-quarantined it. The whitelist
+fixes that — a restored file is remembered as a false positive and skipped by
+all future scans, even after the daemon is stopped and restarted.
+
+**How a file gets added to the whitelist (`restore.sh`, choice `1` branch):**
+
+1. User picks a quarantined file and chooses `1. Restore`.
+2. After `cp quarantine → dir` + `rm quarantine`, the script runs:
+   ```bash
+   touch ".whitelist"
+   if ! grep -Fxq "$filename" ".whitelist"; then
+       echo "$filename" >> ".whitelist"
+   fi
+   echo "$filename added to whitelist"
+   ```
+3. So `.whitelist` (in the project directory, one basename per line) gains an
+   entry, e.g. `note.exe`. Choosing `2` (delete) or `3` (leave) adds nothing.
+   Because it is a plain file on disk, it **persists across daemon runs**.
+
+**How the daemon checks it during a scan (`antivirusd.sh` and
+`antivirus-cron.sh`, top of the `for file in "$dir"/*` loop, before the
+extension/keyword checks):**
+
+```bash
+# Bonus 2: Whitelist check - skip files restored as false positives
+whitelist_name=$(basename "$file")
+if [ -f ".whitelist" ] && grep -Fxq "$whitelist_name" ".whitelist"; then
+    echo "$file is whitelisted, skipping"
+    continue
+fi
+```
+
+- `grep -Fxq` = exact (`-x`), fixed-string (`-F`), quiet (`-q`) match, so only
+  the exact basename is skipped (no substring/regex surprises).
+- The `continue` skips both the `*.exe|*.bat|...` extension check and the
+  `grep -qiE 'virus|...'` keyword check for that file.
+- Applies to both scanners, so neither the looping daemon nor the cron
+  one-shot scan will re-flag a whitelisted file.
+
+**Manage it manually:**
+
+```bash
+cat .whitelist                    # inspect entries
+rm .whitelist                     # clear all (restored files become flaggable again)
+sed -i '/^note\.exe$/d' .whitelist  # remove one entry
+```
 

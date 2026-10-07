@@ -24,6 +24,12 @@ else
 			continue
 		fi
 
+		whitelist_name=$(basename "$file")
+		if [ -f ".whitelist" ] && grep -Fxq "$whitelist_name" ".whitelist"; then
+			echo "$file is whitelisted, skipping"
+			continue
+		fi
+
 		malicious=false
 
 		case "$file" in
@@ -39,7 +45,7 @@ else
 		if [ "$malicious" = true ]; then
 			filename=$(basename "$file")
 
-			echo "$file is malicious and it is deleted"
+			echo "$file is malicious and it is DELETED"
 
 			cp "$file" "$mal_dir/$filename"
 			rm "$file"

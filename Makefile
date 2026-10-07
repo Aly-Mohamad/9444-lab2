@@ -2,7 +2,7 @@ dir1 := dir
 dir2 := malicious_dir
 n := 2
 
-.PHONY: all antivirus restore create_directory
+.PHONY: all antivirus restore create_directory antivirus-cron
 
 all: antivirus
 
@@ -15,5 +15,8 @@ antivirus: create_directory
 
 restore: create_directory
 	./restore.sh $(dir1) $(dir2)
+
+antivirus-cron: create_directory
+	./antivirus-cron.sh $(dir1) $(dir2)
 
 

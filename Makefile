@@ -7,11 +7,10 @@ n := 2
 all: antivirus
 
 create_directory:
-	mkdir -p $(dir2)
+	mkdir -p $(dir1) $(dir2)
 
 antivirus: create_directory
 	./antivirusd.sh $(dir1) $(dir2) $(n)
-
 
 restore: create_directory
 	./restore.sh $(dir1) $(dir2)

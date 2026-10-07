@@ -17,6 +17,7 @@ This is a shell script checks for directory changes and when a change is detecte
 ```text
 Os/
 ├── antivirusd.sh       # Antivirus monitor daemon (bash, infinite loop)
+├── antivirus-cron.sh   # One-shot scan for cron scheduling (bash, single pass)
 ├── restore.sh          # Interactive quarantine restore/delete tool (bash)
 ├── Makefile            # Wrappers: `make antivirus`, `make restore`
 ├── README.md           # This file
@@ -58,26 +59,39 @@ No extra packages and no root required to run the tools.
 ## Step-by-step Instructions
 
 ### 1. Run the Antivirus daemon
+```bash
+cd /home/aly/programming/Os
 
-cd /home/aly/programming/Os\
-make antivirus\
-or\
 make
+# or
+make antivirus
+# or
+./antivirusd.sh dir malicious_dir 2
+```
 
 ### 2. Run the Restore tool
+```bash
+cd /home/aly/programming/Os
 
-cd /home/aly/programming/Os\
-make restore 
+make restore
+# or
+./restore.sh dir malicious_dir
+```
 
 ### 3. Run the Cronjob script
+```bash
+cd /home/aly/programming/Os
 
-cd /home/aly/programming/Os\
-make antivirus-cron 
+make antivirus-cron
+# or
+./antivirus-cron.sh dir malicious_dir
+```
+
 ## Where Flagged-Extensions and Flagged-Keywords Are Defined
 
 All detection logic lives in **`antivirusd.sh`**. There is no separate config file.
 
-**1. Flagged extensions — `antivirusd.sh` lines 26–30 (`case` statement):**
+**1. Flagged extensions — `antivirusd.sh` lines 23–27 (`case` statement inside `scan_directory()`):**
 
 ```bash
 case "$file" in
@@ -91,7 +105,7 @@ esac
 - To add e.g. `*.js` / `*.dll`: edit that line to
   `*.exe|*.bat|*.vbs|*.scr|*.ps1|*.js|*.dll)`.
 
-**2. Flagged keywords — `antivirusd.sh` line 32 (`grep -qiE`):**
+**2. Flagged keywords — `antivirusd.sh` line 29 (`grep -qiE` inside `scan_directory()`):**
 
 ```bash
 if grep -qiE 'virus|trojan|malware|worm|ransomware' "$file"; then
@@ -210,8 +224,8 @@ all future scans, even after the daemon is stopped and restarted.
    entry, e.g. `note.exe`. Choosing `2` (delete) or `3` (leave) adds nothing.
    Because it is a plain file on disk, it **persists across daemon runs**.
 
-**How the daemon checks it during a scan (`antivirusd.sh` and
-`antivirus-cron.sh`, top of the `for file in "$dir"/*` loop, before the
+**How the daemon checks it during a scan (`antivirusd.sh` lines 15–19 and
+`antivirus-cron.sh`, top of the `for` loop inside `scan_directory()`, before the
 extension/keyword checks):**
 
 ```bash

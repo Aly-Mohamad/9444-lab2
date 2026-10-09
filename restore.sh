@@ -12,11 +12,13 @@ while true; do
 
 	files=("$mal_dir"/*)
 
+	echo "Choose a file:"
+
 	for i in "${!files[@]}"; do
     		echo "$((i + 1)). $(basename "${files[$i]}")"
 	done
 
-	read -p "Choose a file: " choice
+	read -p "> " choice
 
 	selected_file="${files[$((choice - 1))]}"
 

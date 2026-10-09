@@ -55,9 +55,7 @@ while true; do
         echo "Same"
     else
         echo "Changed"
-
         scan_directory
-
         ls -l "$dir" > directory-info.last
     fi
 done

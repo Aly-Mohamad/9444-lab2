@@ -54,5 +54,5 @@ if cmp -s directory-info.new directory-info.last; then
 else
     echo "Changed"
     scan_directory
-    cp directory-info.new directory-info.last
+    ls -l "$dir" > directory-info.last
 fi
